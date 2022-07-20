@@ -1,29 +1,30 @@
 /**
- * @author n1474335 [n1474335@gmail.com]
- * @copyright Crown Copyright 2016
+ * @author ptashima [ptashima@toolboxtve.com]
+ * @copyright Crown Copyright 2022
  * @license Apache-2.0
  */
 
 import Operation from "../Operation.mjs";
-import {fromBase64, ALPHABET_OPTIONS} from "../lib/Base64.mjs";
+import { fromBase64, ALPHABET_OPTIONS } from "../lib/Base64.mjs";
+import { CurlGenerator } from "curl-generator";
 
 /**
- * From Base64 operation
+ * fullRequestTemplate to curl operation
  */
-class FromBase64 extends Operation {
+class FullRequestTemplateToCurl extends Operation {
 
-    /**
-     * FromBase64 constructor
-     */
+  /**
+   * FullRequestTemplateToCurl constructor
+   */
     constructor() {
         super();
 
-        this.name = "From Base64";
+        this.name = "fullRequestTemplate to curl";
         this.module = "Default";
-        this.description = "Base64 is a notation for encoding arbitrary byte data using a restricted set of symbols that can be conveniently used by humans and processed by computers.<br><br>This operation decodes data from an ASCII Base64 string back into its raw format.<br><br>e.g. <code>aGVsbG8=</code> becomes <code>hello</code>";
-        this.infoURL = "https://wikipedia.org/wiki/Base64";
+        this.description = "Copy the fullRequestTemplate from the database and paste here";
+        this.infoURL = "";
         this.inputType = "string";
-        this.outputType = "byteArray";
+        this.outputType = "string";
         this.args = [
             {
                 name: "Alphabet",
@@ -51,8 +52,7 @@ class FromBase64 extends Operation {
                 pattern: "^\\s*[A-Z\\d\\-_]{20,}\\s*$",
                 flags: "i",
                 args: ["A-Za-z0-9-_", true, false]
-            },
-            {
+            }, {
                 pattern: "^\\s*(?:[A-Z\\d+\\-]{4}){5,}(?:[A-Z\\d+\\-]{2}==|[A-Z\\d+\\-]{3}=)?\\s*$",
                 flags: "i",
                 args: ["A-Za-z0-9+\\-=", true, false]
@@ -130,46 +130,32 @@ class FromBase64 extends Operation {
         ];
     }
 
-    /**
-     * @param {string} input
-     * @param {Object[]} args
-     * @returns {byteArray}
-     */
+  /**
+   * @param {string} input
+   * @param {Object[]} args
+   * @returns {string}
+   */
     run(input, args) {
         const [alphabet, removeNonAlphChars, strictMode] = args;
 
-        return fromBase64(input, alphabet, "byteArray", removeNonAlphChars, strictMode);
+        const parsedInput = fromBase64(input, alphabet, "string", removeNonAlphChars, strictMode);
+        const parsedTemplate = parseFullRequestTemplate(parsedInput);
+        return CurlGenerator(parsedTemplate);
     }
 
-    /**
-     * Highlight to Base64
-     *
-     * @param {Object[]} pos
-     * @param {number} pos[].start
-     * @param {number} pos[].end
-     * @param {Object[]} args
-     * @returns {Object[]} pos
-     */
-    highlight(pos, args) {
-        pos[0].start = Math.ceil(pos[0].start / 4 * 3);
-        pos[0].end = Math.floor(pos[0].end / 4 * 3);
-        return pos;
-    }
-
-    /**
-     * Highlight from Base64
-     *
-     * @param {Object[]} pos
-     * @param {number} pos[].start
-     * @param {number} pos[].end
-     * @param {Object[]} args
-     * @returns {Object[]} pos
-     */
-    highlightReverse(pos, args) {
-        pos[0].start = Math.floor(pos[0].start / 3 * 4);
-        pos[0].end = Math.ceil(pos[0].end / 3 * 4);
-        return pos;
-    }
 }
 
-export default FromBase64;
+function parseFullRequestTemplate(template) {
+    const requestTemplate = JSON.parse(template);
+
+    renameObjectKey(requestTemplate, "uri", "url");
+
+    return requestTemplate;
+}
+
+function renameObjectKey(obj, oldKey, newKey) {
+    Object.defineProperty(obj, newKey, Object.getOwnPropertyDescriptor(obj, oldKey));
+    delete obj[oldKey];
+}
+
+export default FullRequestTemplateToCurl;
