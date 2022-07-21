@@ -16,11 +16,11 @@ const nodeFlags = "--experimental-modules --experimental-json-modules --experime
  * @license Apache-2.0
  */
 
-module.exports = function (grunt) {
+module.exports = function(grunt) {
     grunt.file.defaultEncoding = "utf8";
     grunt.file.preserveBOM = false;
 
-    // Tasks
+  // Tasks
     grunt.registerTask("dev",
         "A persistent task which creates a development build whenever source files are modified.",
         ["clean:dev", "clean:config", "exec:generateConfig", "concurrent:dev"]);
@@ -28,7 +28,7 @@ module.exports = function (grunt) {
     grunt.registerTask("prod",
         "Creates a production-ready build. Use the --msg flag to add a compile message.",
         [
-            "eslint", "clean:prod", "clean:config", "exec:generateConfig", "findModules", "webpack:web",
+            "clean:prod", "clean:config", "exec:generateConfig", "findModules", "webpack:web",
             "copy:standalone", "zip:standalone", "clean:standalone", "chmod"
         ]);
 
@@ -72,7 +72,7 @@ module.exports = function (grunt) {
         });
 
 
-    // Load tasks provided by each plugin
+  // Load tasks provided by each plugin
     grunt.loadNpmTasks("grunt-eslint");
     grunt.loadNpmTasks("grunt-webpack");
     grunt.loadNpmTasks("grunt-contrib-clean");
@@ -85,7 +85,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-zip");
 
 
-    // Project configuration
+  // Project configuration
     const compileTime = grunt.template.today("UTC:dd/mm/yyyy HH:MM:ss") + " UTC",
         pkg = grunt.file.readJSON("package.json"),
         webpackConfig = require("./webpack.config.js"),
@@ -96,10 +96,10 @@ module.exports = function (grunt) {
         },
         moduleEntryPoints = listEntryModules(),
         nodeConsumerTestPath = "~/tmp-cyberchef",
-        /**
-         * Configuration for Webpack production build. Defined as a function so that it
-         * can be recalculated when new modules are generated.
-         */
+    /**
+     * Configuration for Webpack production build. Defined as a function so that it
+     * can be recalculated when new modules are generated.
+     */
         webpackProdConf = () => {
             return {
                 mode: "production",
@@ -108,9 +108,9 @@ module.exports = function (grunt) {
                     main: "./src/web/index.js"
                 }, moduleEntryPoints),
                 output: {
-                    path: __dirname + "/build/prod",
+                    path: __dirname + "/docs",
                     filename: chunkData => {
-                        return chunkData.chunk.name === "main" ? "assets/[name].js": "[name].js";
+                        return chunkData.chunk.name === "main" ? "assets/[name].js" : "[name].js";
                     },
                     globalObject: "this"
                 },
@@ -144,9 +144,9 @@ module.exports = function (grunt) {
         };
 
 
-    /**
-     * Generates an entry list for all the modules.
-     */
+  /**
+   * Generates an entry list for all the modules.
+   */
     function listEntryModules() {
         const entryModules = {};
 
@@ -159,34 +159,34 @@ module.exports = function (grunt) {
         return entryModules;
     }
 
-    /**
-     * Detects the correct delimiter to use to chain shell commands together
-     * based on the current OS.
-     *
-     * @param {string[]} cmds
-     * @returns {string}
-     */
+  /**
+   * Detects the correct delimiter to use to chain shell commands together
+   * based on the current OS.
+   *
+   * @param {string[]} cmds
+   * @returns {string}
+   */
     function chainCommands(cmds) {
         const win = process.platform === "win32";
         if (!win) {
             return cmds.join(";");
         }
         return cmds
-            // && means that subsequent commands will not be executed if the
-            // previous one fails. & would coninue on a fail
+      // && means that subsequent commands will not be executed if the
+      // previous one fails. & would coninue on a fail
             .join("&&")
-            // Windows does not support \n properly
+      // Windows does not support \n properly
             .replace(/\n/g, "\\n");
     }
 
     grunt.initConfig({
         clean: {
             dev: ["build/dev/*"],
-            prod: ["build/prod/*"],
+            prod: ["docs/*"],
             node: ["build/node/*"],
             config: ["src/core/config/OperationConfig.json", "src/core/config/modules/*", "src/code/operations/index.mjs"],
             nodeConfig: ["src/node/index.mjs", "src/node/config/OperationConfig.json"],
-            standalone: ["build/prod/CyberChef*.html"]
+            standalone: ["docs/CyberChef*.html"]
         },
         eslint: {
             configs: ["*.{js,mjs}"],
@@ -234,37 +234,37 @@ module.exports = function (grunt) {
         },
         zip: {
             standalone: {
-                cwd: "build/prod/",
+                cwd: "docs/",
                 src: [
-                    "build/prod/**/*",
-                    "!build/prod/index.html",
-                    "!build/prod/BundleAnalyzerReport.html",
+                    "docs/**/*",
+                    "!docs/index.html",
+                    "!docs/BundleAnalyzerReport.html",
                 ],
-                dest: `build/prod/CyberChef_v${pkg.version}.zip`
+                dest: `docs/CyberChef_v${pkg.version}.zip`
             }
         },
         connect: {
             prod: {
                 options: {
                     port: grunt.option("port") || 8000,
-                    base: "build/prod/"
+                    base: "docs/"
                 }
             }
         },
         copy: {
             ghPages: {
                 options: {
-                    process: function (content, srcpath) {
+                    process: function(content, srcpath) {
                         if (srcpath.indexOf("index.html") >= 0) {
-                            // Add Google Analytics code to index.html
+              // Add Google Analytics code to index.html
                             content = content.replace("</body></html>",
                                 grunt.file.read("src/web/static/ga.html") + "</body></html>");
 
-                            // Add Structured Data for SEO
+              // Add Structured Data for SEO
                             content = content.replace("</head>",
                                 "<script type='application/ld+json'>" +
-                                JSON.stringify(JSON.parse(grunt.file.read("src/web/static/structuredData.json"))) +
-                                "</script></head>");
+                JSON.stringify(JSON.parse(grunt.file.read("src/web/static/structuredData.json"))) +
+                "</script></head>");
                             return grunt.template.process(content, srcpath);
                         } else {
                             return content;
@@ -274,16 +274,16 @@ module.exports = function (grunt) {
                 },
                 files: [
                     {
-                        src: ["build/prod/index.html"],
-                        dest: "build/prod/index.html"
+                        src: ["docs/index.html"],
+                        dest: "docs/index.html"
                     }
                 ]
             },
             standalone: {
                 options: {
-                    process: function (content, srcpath) {
+                    process: function(content, srcpath) {
                         if (srcpath.indexOf("index.html") >= 0) {
-                            // Replace download link with version number
+              // Replace download link with version number
                             content = content.replace(/<a [^>]+>Download CyberChef.+?<\/a>/,
                                 `<span>Version ${pkg.version}</span>`);
 
@@ -296,8 +296,8 @@ module.exports = function (grunt) {
                 },
                 files: [
                     {
-                        src: ["build/prod/index.html"],
-                        dest: `build/prod/CyberChef_v${pkg.version}.html`
+                        src: ["docs/index.html"],
+                        dest: `docs/CyberChef_v${pkg.version}.html`
                     }
                 ]
             }
@@ -334,7 +334,7 @@ module.exports = function (grunt) {
                 command: "git gc --prune=now --aggressive"
             },
             sitemap: {
-                command: `node ${nodeFlags} src/web/static/sitemap.mjs > build/prod/sitemap.xml`,
+                command: `node ${nodeFlags} src/web/static/sitemap.mjs > docs/sitemap.xml`,
                 sync: true
             },
             generateConfig: {
