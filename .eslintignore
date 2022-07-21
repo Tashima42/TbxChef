@@ -1,2 +1,3 @@
 src/core/vendor/**
 src/core/operations/FullRequestTemplateToCurl.mjs
+src/core/operations/RestToCurl.mjs
