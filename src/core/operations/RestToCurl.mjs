@@ -35,6 +35,12 @@ class RestToCurl extends Operation {
    */
   run(input) {
     const parsed = JSON.parse(input)
+    if (parsed.request.fullRequestTemplate) {
+      const parsedInput = transformB64StringOrReturnOriginal(parsed.request.fullRequestTemplate)
+      const parsedTemplate = parseFullRequestTemplate(JSON.parse(parsedInput), parsed.request.method)
+      //return JSON.stringify(parsedTemplate)
+      return CurlGenerator(parsedTemplate)
+    }
     iterateOverObjectAndTransformFromB64(parsed)
     const parsedTemplate = parseRestToCurlGenerator(parsed)
     return CurlGenerator(parsedTemplate);
@@ -45,6 +51,26 @@ function parseRestToCurlGenerator(rest) {
   const config = { ...rest, url: rest.baseUrl }
   if (rest.request.query) config.url = `${config.url}?${rest.request.query}`
   return config
+}
+
+function parseFullRequestTemplate(requestTemplate, method) {
+  renameObjectKey(requestTemplate, "uri", "url");
+  if(requestTemplate.headers["content-type"] === "application/x-www-form-urlencoded") {
+    requestTemplate.body = transFormObjectToString(requestTemplate.form);
+    delete requestTemplate.form;
+  }
+
+  return requestTemplate;
+
+  function renameObjectKey(obj, oldKey, newKey) {
+    Object.defineProperty(obj, newKey, Object.getOwnPropertyDescriptor(obj, oldKey));
+    delete obj[oldKey];
+  }
+  function transFormObjectToString(obj) {
+    let str = "";
+    for(const key in obj) str += `${key}=${obj[key]}&`;
+    return str
+  }
 }
 
 function iterateOverObjectAndTransformFromB64(obj) {
